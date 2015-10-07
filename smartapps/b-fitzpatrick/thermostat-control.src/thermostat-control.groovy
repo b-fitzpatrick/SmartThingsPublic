@@ -133,8 +133,8 @@ def applySetpoint() {
     thermostat.setCoolingSetpoint(applyCool)
     
     // Schedule the next setpoint
-	log.debug "Scheduling next setpoint at: " + nextSetpoint.cal.getTime().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-    sendNotificationEvent("Scheduling next setpoint at: " + nextSetpoint.cal.getTime().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ"))
+	log.debug "Scheduling next setpoint at: " + nextSetpoint.cal.getTime().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ", location.timeZone)
+    sendNotificationEvent("Scheduling next setpoint at: " + nextSetpoint.cal.getTime().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ", location.timeZone))
     runOnce(nextSetpoint.cal.getTime().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ"), applySetpoint)
 }
 

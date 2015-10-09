@@ -29,6 +29,7 @@ preferences {
 		input "sensor", "capability.contactSensor", title: "Which sensor?", multiple: false
         input "timeout", "number", title: "Notify if open how many minutes?"
         input "message", "text", title: "Notification text"
+        input "button", "capability.button", title: "Button to cancel notification?", multiple: false
 	}
 }
 
@@ -49,6 +50,7 @@ def updated() {
 def initialize() {
 	subscribe(sensor, "contact.open", openHandler)
     subscribe(sensor, "contact.closed", closedHandler)
+    subscribe(button, "button.pushed", buttonHandler)
 }
 
 def openHandler(evt) {
@@ -60,5 +62,9 @@ def timeoutHandler(evt) {
 }
 
 def closedHandler(evt) {
+	unschedule()
+}
+
+def buttonHandler(evt) {
 	unschedule()
 }

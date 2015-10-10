@@ -28,6 +28,7 @@ metadata {
 		capability "Polling"
         capability "Refresh"
 		capability "Sensor"
+        capability "Switch"
         
         attribute "door", "string"
         
@@ -36,6 +37,8 @@ metadata {
         command "poll"
         command "refresh"
         command "doorChange"
+        command "on"
+        command "off"
 	}
 
 	simulator {
@@ -59,6 +62,14 @@ metadata {
 }
 
 // handle commands
+def on() {
+	open()
+}
+
+def off() {
+	close()
+}
+
 def open() {
 	log.debug "Executing 'open'"
 	if (device.currentValue("door") != "open") {
@@ -100,9 +111,11 @@ private getStatus() {
         if (response.data.result == 1) {
         	sendEvent(name: "door", value: "closed")
             sendEvent(name: "contact", value: "closed")
+            sendEvent(name: "switch", value: "off")
         } else {
         	sendEvent(name: "door", value: "open")
             sendEvent(name: "contact", value: "open")
+            sendEvent(name: "switch", value: "on")
         }
     }
         

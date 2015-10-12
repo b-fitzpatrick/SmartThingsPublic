@@ -126,11 +126,11 @@ def applySetpoint() {
     }
     
 	// Make sure thermostat is set to auto and set the temperatures
-    thermostat.auto()
+    if (thermostat.currentThermostatMode != "auto") thermostat.auto()
     log.debug "Setting heating temperature to ${applyHeat}"
-    thermostat.setHeatingSetpoint(applyHeat)
+    if (thermostat.currentHeatingSetpoint != applyHeat) thermostat.setHeatingSetpoint(applyHeat)
     log.debug "Setting cooling temperature to ${applyCool}"
-    thermostat.setCoolingSetpoint(applyCool)
+    if (thermostat.currentCoolingSetpoint != applyCool) thermostat.setCoolingSetpoint(applyCool)
     
     // Schedule the next setpoint
 	log.debug "Scheduling next setpoint at: " + nextSetpoint.cal.getTime().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ", location.timeZone)

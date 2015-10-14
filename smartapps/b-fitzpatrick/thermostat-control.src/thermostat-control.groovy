@@ -75,7 +75,7 @@ def initialize() {
 	// Set temperature on virtual device
     //thermostat.setTemperature(75.5)
     
-    subscribe(location, "mode", modeChange)
+    if (awayDelta > 0) subscribe(location, "mode", modeChange)
     applySetpoint()
 }
 

@@ -75,6 +75,7 @@ def open() {
 	if (device.currentValue("door") != "open") {
     	log.debug "Sending actDoor${door_num}"
         actDoor()
+        runIn(3, "refresh")
     } else {
     	log.debug "Not opening door: already open"
     }
@@ -85,6 +86,7 @@ def close() {
 	if (device.currentValue("door") != "closed") {
     	log.debug "Sending actDoor${door_num}"
         actDoor()
+        runIn(12, "refresh")
     } else {
     	log.debug "Not closing door: already closed"
     }
@@ -101,21 +103,19 @@ def refresh() {
 }
 
 def doorChange(String doorStatus) {
-	sendEvent(name: "door", value: doorStatus)
-    sendEvent(name: "contact", value: doorStatus)
+	log.debug "Executing doorChange('${doorStatus}')"
+	sendEvent(name: "door", value: doorStatus, descriptionText: "Door is ${doorStatus}")
+    sendEvent(name: "contact", value: doorStatus, displayed: false)
+    sendEvent(name: "switch", value: (doorStatus == "closed") ? "off" : "on", displayed: false)
 }
 
 private getStatus() {
 	def statusClosure = { response ->
     	log.debug "Status request was successful, $response.data"
-        if (response.data.result == 1) {
-        	sendEvent(name: "door", value: "closed")
-            sendEvent(name: "contact", value: "closed")
-            sendEvent(name: "switch", value: "off")
-        } else {
-        	sendEvent(name: "door", value: "open")
-            sendEvent(name: "contact", value: "open")
-            sendEvent(name: "switch", value: "on")
+        if (response.data.result == 1 && device.currentValue("door") != "closed") {
+            doorChange("closed")
+        } else if (response.data.result == 0 && device.currentValue("door") != "open") {
+        	doorChange("open")
         }
     }
         
@@ -136,5 +136,4 @@ private actDoor() {
     
     log.debug "url: $actParams.uri"
 	httpPost(actParams)
-    runIn(12, "refresh")
 }

@@ -30,15 +30,9 @@ metadata {
 		capability "Sensor"
         capability "Switch"
         
-        attribute "door", "string"
+        attribute "verifyClose", "string"
         
-        command "open"
-        command "close"
-        command "poll"
-        command "refresh"
         command "doorChange"
-        command "on"
-        command "off"
 	}
 
 	simulator {
@@ -75,7 +69,6 @@ def open() {
 	if (device.currentValue("door") != "open") {
     	log.debug "Sending actDoor${door_num}"
         actDoor()
-        runIn(3, "refresh")
     } else {
     	log.debug "Not opening door: already open"
     }
@@ -86,9 +79,31 @@ def close() {
 	if (device.currentValue("door") != "closed") {
     	log.debug "Sending actDoor${door_num}"
         actDoor()
-        runIn(12, "refresh")
+        runIn(14, "verifyClose")
     } else {
     	log.debug "Not closing door: already closed"
+    }
+}
+
+def verifyClose() {
+	if (device.currentValue("door") != "closed") {
+    	log.debug "Did not verify that door is closed, actuating a second time"
+        actDoor()
+        runIn(14, "verifyClose2")
+    } else {
+    	log.debug "Verified that door is closed"
+        sendEvent(name: "verifyClose", value: "true", displayed: false)
+    }
+}
+
+def verifyClose2() {
+	if (device.currentValue("door") != "closed") {
+		log.debug "Still did not verify that door is closed, sending event"
+        sendEvent(name: "verifyClose", value: "false", displayed: false)
+        sendEvent(name: "verifyClose", value: "true", displayed: false)
+    } else {
+    	log.debug "Verified that door is closed"
+        sendEvent(name: "verifyClose", value: "true", displayed: false)
     }
 }
 

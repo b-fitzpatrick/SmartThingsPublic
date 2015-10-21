@@ -47,6 +47,12 @@ def updated() {
 
 def initialize() {
 	// TODO: subscribe to attributes, devices, locations, etc.
+    subscribe(door1, "verifyClose.false", failHandler)
+    subscribe(door2, "verifyClose.false", failHandler)
+}
+
+def failHandler(evt) {
+	sendPush("${evt.displayName} failed to close")
 }
 
 mappings {

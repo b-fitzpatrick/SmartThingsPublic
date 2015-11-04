@@ -48,23 +48,26 @@ def updated() {
 }
 
 def initialize() {
-	subscribe(sensor, "contact.open", openHandler)
+    subscribe(sensor, "contact.open", openHandler)
     subscribe(sensor, "contact.closed", closedHandler)
     subscribe(button, "button.pushed", buttonHandler)
 }
 
 def openHandler(evt) {
-	runIn(60*timeout, timeoutHandler)
+	state.cancelled = false
+    runIn(60*timeout, timeoutHandler)
 }
 
 def timeoutHandler(evt) {
-	sendPush(message)
+	if (!state.cancelled) sendPush(message)
 }
 
 def closedHandler(evt) {
-	unschedule()
+	//unschedule()
+    state.cancelled = true
 }
 
 def buttonHandler(evt) {
-	unschedule()
+	//unschedule()
+    state.cancelled = true
 }

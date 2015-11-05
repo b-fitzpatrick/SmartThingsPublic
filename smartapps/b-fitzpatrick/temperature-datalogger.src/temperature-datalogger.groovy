@@ -27,6 +27,7 @@ definition(
 preferences {
 	section("Settings") {
 		input "thermostats", "capability.thermostat", title: "Which thermostats?", multiple:true
+        input "apikey", "text", title: "Forecast.io API key"
         input "formId", "text", title: "Google Form ID"
 	}
 }
@@ -48,7 +49,6 @@ def initialize() {
     subscribe(thermostats, "thermostatOperatingState", stateHandler)
     
     // Record data now and periodically
-    log.debug "here"
     schedHandler()
     runEvery5Minutes(schedHandler)
 }
@@ -78,8 +78,10 @@ def recordData(evt, trigger) {
     def windBearing
     def cloudCover
     
+    def url = "https://api.forecast.io/forecast/${apikey}/33.175,-96.690/"
+    
     def params = [
-        uri:  'https://api.forecast.io/forecast/830033e4ae2f33ce8e8953f64b170948/33.175,-96.690/',
+        uri:  url,
         contentType: 'application/json'
     ]
     try {
@@ -111,7 +113,7 @@ def recordData(evt, trigger) {
     
     devices.each { thermostat ->
         // Send data to Google Form
-        def url = "https://docs.google.com/a/froxen.com/forms/d/${formId}/formResponse"
+        url = "https://docs.google.com/a/froxen.com/forms/d/${formId}/formResponse"
         def body = "entry.1554218875=${evt.date.getTime().toString()}&" +
                    "entry.1718537046=${URLEncoder.encode(thermostat.displayName, 'UTF-8')}&" +
                    "entry.2044143710=${trigger}&" +

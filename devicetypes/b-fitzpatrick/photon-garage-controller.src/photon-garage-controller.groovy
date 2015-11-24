@@ -79,7 +79,7 @@ def close() {
 	if (device.currentValue("door") != "closed") {
     	log.debug "Sending actDoor${door_num}"
         actDoor()
-        runIn(14, "verifyClose")
+        runIn(20, "verifyClose")
     } else {
     	log.debug "Not closing door: already closed"
     }
@@ -89,7 +89,7 @@ def verifyClose() {
 	if (device.currentValue("door") != "closed") {
     	log.debug "Did not verify that door is closed, actuating a second time"
         actDoor()
-        runIn(14, "verifyClose2")
+        runIn(20, "verifyClose2")
     } else {
     	log.debug "Verified that door is closed"
         sendEvent(name: "verifyClose", value: "true", displayed: false)

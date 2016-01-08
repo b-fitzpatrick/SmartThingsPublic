@@ -28,12 +28,12 @@ preferences {
 	section("Settings") {
 		input "minimote", "capability.button", title: "Which device?", multiple: false
         input "buttonNum", "number", title: "Which button?", range: "1..4"
-        input "pushedOrHeld", "text", title: "When pushed or held?", options: ["pushed", "held"]
+        input "pushedOrHeld", "enum", title: "When pushed or held?", options: ["pushed", "held"]
         input "message", "text", title: "Message to send?"
         input "phone1", "phone", title: "Send an SMS to this number? (optional)", required: false
         input "phone2", "phone", title: "Send another SMS to this number? (optional)", required: false
         input "ifttt", "text", title: "Fire IFTTT maker event named? (optional)", required: false
-        input "ifttt-key", "text", title: "IFTTT maker api key? (if used)", required: false
+        input "iftttKey", "text", title: "IFTTT maker api key? (if used)", required: false
 	}
 }
 
@@ -76,7 +76,7 @@ def buttonHandler(evt) {
 
 def activateCall() {
 	try {
-        httpPost("https://maker.ifttt.com/trigger/${ifttt}/with/key/${ifttt-key}", "foo=bar") { resp ->
+        httpPost("https://maker.ifttt.com/trigger/${ifttt}/with/key/${iftttKey}", "foo=bar") { resp ->
             log.debug "response data: ${resp.data}"
         }
     } catch (e) {

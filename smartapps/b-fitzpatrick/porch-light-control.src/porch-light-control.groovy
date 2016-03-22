@@ -50,11 +50,11 @@ def updated() {
 def initialize() {
 	state.openOn = false
 	subscribe(sensors, "contact.open", openHandler)
-    schedule(offTime, offSchedule)
-    setOnSchedule()
+    schedule(offTime, offSchedule) // schedule next 'off' time
+    setOnSchedule() // schedule next 'on' time
 }
 
-def onSchedule() {
+def onSchedule() { // runs when scheduled 'on' occurs
     if (state.openOn) {
     	unschedule("lightOff") // handle case where light is on and 'lightOff' has been scheduled
         state.openOn = false
@@ -63,11 +63,11 @@ def onSchedule() {
     setOnSchedule()
 }
 
-def offSchedule() {
+def offSchedule() { // runs when scheduled 'off' occurs
 	light.off() // It could happen that the light will turn off early if previously activated, but this seems not worth handling.
 }
 
-def openHandler(evt) {
+def openHandler(evt) { // runs when garage door is opened
 	// Only act if it is dark
     def sunriseAndSunset = getSunriseAndSunset()
     if (evt.date > sunriseAndSunset.sunset || evt.date < sunriseAndSunset.sunrise) {
@@ -79,22 +79,22 @@ def openHandler(evt) {
                 light.on()
             }
             runIn(60 * delay, lightOff)
-            state.openOn = true
+            state.openOn = true // 'on' because of door activation
         }
     }
 }
 
-def lightOff() {
+def lightOff() { // runs when door-activated 'off' occurs
 	light.off()
-    state.openOn = false
+    state.openOn = false // no longer 'on' because of door activation
 }
 
-def setOnSchedule() {
+def setOnSchedule() { // schedules the next 'on' time
 	def sunriseAndSunset = getSunriseAndSunset()
     def onTime = new Date(sunriseAndSunset.sunset.getTime() + afterSunset * 60 * 1000)
     def now = new Date()
-    if (now > onTime) {
+    if (now > onTime) { // if past onTime for today, schedule for tomorrow
     	onTime = new Date(onTime.getTime() + 24 * 60 * 60 * 1000)
     }
-    runOnce(onTime, onSchedule)    
+    runOnce(onTime, onSchedule)
 }

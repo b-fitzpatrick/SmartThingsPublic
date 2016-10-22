@@ -59,6 +59,8 @@ def openHandler(evt) {
 }
 
 def timeoutHandler(evt) {
+	contact.refresh()
+    contact.refresh() // Calling a second time to give the closedHandler time to cancel
 	if (!state.cancelled) sendPush(message)
 }
 

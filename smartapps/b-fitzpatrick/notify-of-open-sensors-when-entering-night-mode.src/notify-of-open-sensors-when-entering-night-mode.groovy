@@ -51,6 +51,7 @@ def checkSensors(evt) {
         log.debug "Entered 'Night' mode, checking sensors"
         def openSensor = false
         sensors.each {
+        	it.refresh()
             log.debug "Checking sensor ${it.name}: ${it.currentContact}"
             if (it.currentContact != "closed") {
                 sendPush("Night: ${it.name} is open.")

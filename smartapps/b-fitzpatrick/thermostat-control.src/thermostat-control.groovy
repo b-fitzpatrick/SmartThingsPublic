@@ -1,7 +1,7 @@
 /**
  *  Thermostat Control
  *
- *  Copyright 2015 Brian Fitzpatrick
+ *  Copyright 2016 Brian Fitzpatrick
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -60,29 +60,18 @@ def setpointsPage() {
 
 def installed() {
     log.debug "Installed with settings: ${settings}"
-    //sendNotificationEvent("Installed with settings: ${settings}")
     initialize()
 }
 
 def updated() {
     log.debug "Updated with settings: ${settings}"
-    //sendNotificationEvent("Updated with settings: ${settings}")
-    unsubscribe()
+    unschedule()
     initialize()
 }
 
 def initialize() {
-	// Set temperature on virtual device
-    //thermostat.setTemperature(75.5)
-    
-    if (awayDelta > 0) subscribe(location, "mode", modeChange)
-    applySetpoint()
-}
-
-def modeChange(evt) {
-    log.debug "Received mode change event, applying setpoint"
-    //sendNotificationEvent("Received mode change event, applying setpoint")
-    applySetpoint()
+	applySetpoint()
+    runEvery5Minutes(applySetpoint)
 }
 
 def activateNow(setpoint) {
@@ -92,8 +81,6 @@ def activateNow(setpoint) {
 
 def applySetpoint() {
 	log.debug "Running applySetpoint()"
-    //sendNotificationEvent("Running applySetpoint()")
-    unschedule() // Clear any previously-scheduled setpoint change, as a new one will be created.
     def applyHeat
     def applyCool
     
@@ -106,36 +93,32 @@ def applySetpoint() {
     	if (activateNow(nextSetpoint)) curSetpoint = nextSetpoint
     }
     
-    // Determine the temperatures based on hold and "Away" settings
+    // Determine the temperature settings based on "Hold" and "Away" settings
     if (holdActive) {
-    	log.debug "Hold active, applying hold setpoint"
         applyHeat = settings.holdHeat
         applyCool = settings.holdCool
-        sendNotificationEvent("Hold active, applying heat: ${applyHeat}, cool: ${applyCool}")
     } else if (location.currentMode == "Away") {
-        log.debug "Applying setpoint ${curSetpoint} +/- ${awayDelta} for 'Away'"
         applyHeat = curSetpoint.heat - awayDelta
-        applyCool = curSetpoint.cool + awayDelta
-        sendNotificationEvent("'Away' active, applying heat: ${applyHeat}, cool: ${applyCool}")
-        
+        applyCool = curSetpoint.cool + awayDelta        
     } else {
-    	log.debug "Applying setpoint ${curSetpoint}"
         applyHeat = curSetpoint.heat
         applyCool = curSetpoint.cool
-        sendNotificationEvent("Applying heat: ${applyHeat}, cool: ${applyCool}")
     }
     
 	// Make sure thermostat is set to auto and set the temperatures
+    // if changed since last applied setting and not currently set
     if (thermostat.currentThermostatMode != "auto") thermostat.auto()
-    log.debug "Setting heating temperature to ${applyHeat}"
-    if (thermostat.currentHeatingSetpoint != applyHeat) thermostat.setHeatingSetpoint(applyHeat)
-    log.debug "Setting cooling temperature to ${applyCool}"
-    if (thermostat.currentCoolingSetpoint != applyCool) thermostat.setCoolingSetpoint(applyCool)
-    
-    // Schedule the next setpoint
-	log.debug "Scheduling next setpoint at: " + nextSetpoint.cal.getTime().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ", location.timeZone)
-    sendNotificationEvent("Scheduling next setpoint at: " + nextSetpoint.cal.getTime().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ", location.timeZone))
-    runOnce(nextSetpoint.cal.getTime().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ"), applySetpoint)
+    if (applyHeat != state.appliedHeat && thermostat.currentHeatingSetpoint != applyHeat) {
+    	log.debug "Setting heating temperature to ${applyHeat}"
+        thermostat.setHeatingSetpoint(applyHeat)
+        state.appliedHeat = applyHeat
+    }
+    if (applyCool != state.appliedCool && thermostat.currentCoolingSetpoint != applyCool) {
+    	log.debug "Setting cooling temperature to ${applyCool}"
+        thermostat.setCoolingSetpoint(applyCool)
+        state.appliedCool = applyCool
+    }
+ 
 }
 
 def getSetpoint(priorOrNext) {

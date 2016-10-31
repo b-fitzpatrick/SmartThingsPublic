@@ -86,7 +86,8 @@ def close() {
 }
 
 def verifyClose() {
-	if (device.currentValue("door") != "closed") {
+	refresh()
+    if (device.currentValue("door") != "closed") {
     	log.debug "Did not verify that door is closed, actuating a second time"
         actDoor()
         runIn(20, "verifyClose2")
@@ -97,7 +98,8 @@ def verifyClose() {
 }
 
 def verifyClose2() {
-	if (device.currentValue("door") != "closed") {
+	refresh()
+    if (device.currentValue("door") != "closed") {
 		log.debug "Still did not verify that door is closed, sending event"
         sendEvent(name: "verifyClose", value: "false", displayed: false)
         sendEvent(name: "verifyClose", value: "true", displayed: false)

@@ -84,6 +84,9 @@ def applySetpoint() {
     def applyHeat
     def applyCool
     
+    // Refresh thermostat state, as events do not seem to be reliable
+    thermostat.refresh()
+    
     // Determine the current and next setpoints
     def curSetpoint = getSetpoint("prior")
     def nextSetpoint = getSetpoint("next")

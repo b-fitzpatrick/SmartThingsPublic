@@ -57,9 +57,10 @@ def initialize() {
 
 def buttonHandler(evt) {
 	log.debug "Running buttonHandler"
-    log.debug "evt.data: " + evt.data
-    log.debug "compare: " + '{"buttonNumber":' + buttonNum + '}'
-	if (evt.data == ('{"buttonNumber":' + buttonNum + '}')) {
+    def data = parseJson(evt.data)
+    log.debug 'buttonNum: ' + buttonNum
+    log.debug 'buttonNumber: ' + data.buttonNumber
+	if (data.buttonNumber == buttonNum) {
     	log.debug "Button ${buttonNum} was ${pushedOrHeld}"
         if (phone1) {
         	sendSms(phone1, message)

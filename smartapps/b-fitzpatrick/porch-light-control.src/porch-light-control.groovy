@@ -17,7 +17,7 @@ definition(
     name: "Porch Light Control",
     namespace: "b-fitzpatrick",
     author: "Brian Fitzpatrick",
-    description: "Controls a light switch. Turns it on/off on a schedule, and turns it on at night when a garage door is opened.",
+    description: "Controls a light switch. Turns it on/off on a schedule, and turns it on at night by contactSensor or motionSensor.",
     category: "My Apps",
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
@@ -31,6 +31,7 @@ preferences {
         input "afterSunset", "number", title: "Turn on how many minutes after sunset?"
         input "offTime", "time", title: "Turn off at what time?"
 		input "sensors", "capability.contactSensor", title: "Also turn on at night when which sensors are opened?", multiple:true
+        input "motions", "capability.motionSensor", title: "Also turn on at night when which sensors detect motion?", multiple:true
         input "delay", "number", title: "Turn off after how many minutes?"
 	}
 }
@@ -50,6 +51,7 @@ def updated() {
 def initialize() {
 	state.openOn = false
 	subscribe(sensors, "contact.open", openHandler)
+    subscribe(motions, "motion.active", openHandler)
     schedule(offTime, offSchedule) // schedule next 'off' time
     setOnSchedule() // schedule next 'on' time
 }
@@ -67,7 +69,7 @@ def offSchedule() { // runs when scheduled 'off' occurs
 	light.off() // It could happen that the light will turn off early if previously activated, but this seems not worth handling.
 }
 
-def openHandler(evt) { // runs when garage door is opened
+def openHandler(evt) { // runs when contactSensor or motionSensor is tripped
 	// Only act if it is dark
     def sunriseAndSunset = getSunriseAndSunset()
     if (evt.date > sunriseAndSunset.sunset || evt.date < sunriseAndSunset.sunrise) {
@@ -79,7 +81,7 @@ def openHandler(evt) { // runs when garage door is opened
                 light.on()
             }
             runIn(60 * delay, lightOff)
-            state.openOn = true // 'on' because of door activation
+            state.openOn = true // 'on' because of trip
         }
     }
 }

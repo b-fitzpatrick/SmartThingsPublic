@@ -70,7 +70,9 @@ def updated() {
 }
 
 def initialize() {
-	applySetpoint()
+	state.appliedHeat = 0
+    state.appliedCool = 0
+    applySetpoint()
     runEvery5Minutes(applySetpoint)
 }
 
@@ -80,12 +82,20 @@ def activateNow(setpoint) {
 }
 
 def applySetpoint() {
-	log.debug "Running applySetpoint(): Current heat: ${thermostat.currentHeatingSetpoint}, cool: ${thermostat.currentCoolingSetpoint}"
+	//log.debug "Running applySetpoint(): Current heat: ${thermostat.currentHeatingSetpoint}, cool: ${thermostat.currentCoolingSetpoint}"
     def applyHeat
     def applyCool
+    def message
     
     // Refresh thermostat state, as events do not seem to be reliable
     thermostat.refresh()
+    
+    // Report the current values
+    message = "${thermostat.displayName}: "
+    message += "CurHeat=${thermostat.currentHeatingSetpoint}, "
+    message += "CurCool=${thermostat.currentCoolingSetpoint}, "
+    message += "AppliedHeat=${state.appliedHeat}, "
+    message += "AppliedCool=${state.appliedCool}, "
     
     // Determine the current and next setpoints
     def curSetpoint = getSetpoint("prior")
@@ -107,31 +117,30 @@ def applySetpoint() {
         applyHeat = curSetpoint.heat
         applyCool = curSetpoint.cool
     }
+    message += "ApplyHeat=${applyHeat}, "
+    message += "ApplyCool=${applyCool}, "
     
 	// Make sure thermostat is set to auto and set the temperatures
     // if changed since last applied setting and not currently set
     if (thermostat.currentThermostatMode != "auto") thermostat.auto()
     if (applyHeat != state.appliedHeat && thermostat.currentHeatingSetpoint != applyHeat) {
-    	log.debug "${thermostat.displayName}: Set heat to ${applyHeat}"
-        sendNotificationEvent("${thermostat.displayName}: Set heat to ${applyHeat}")
+    	message += "Set heat, "
         thermostat.setHeatingSetpoint(applyHeat, [delay: 2000])
         state.appliedHeat = applyHeat
         thermostat.setHeatingSetpoint(applyHeat, [delay: 6000]) // Do again. Will this make it more reliable?
     } else {
-    	log.debug "${thermostat.displayName}: Heat already at ${applyHeat}"
-    	sendNotificationEvent("${thermostat.displayName}: Heat already at ${applyHeat}")
+    	message += "Heat not set, "
     }
     if (applyCool != state.appliedCool && thermostat.currentCoolingSetpoint != applyCool) {
-    	log.debug "${thermostat.displayName}: Set cool to ${applyCool}"
-        sendNotificationEvent("${thermostat.displayName}: Set cool to ${applyCool}")
+    	message += "Set cool"
         thermostat.setCoolingSetpoint(applyCool, [delay: 4000])
         state.appliedCool = applyCool
         thermostat.setCoolingSetpoint(applyCool, [delay: 8000]) // Do again. Will this make it more reliable?
     } else {
-    	log.debug "${thermostat.displayName}: Cool already at ${applyCool}"
-        sendNotificationEvent("${thermostat.displayName}: Cool already at ${applyCool}")
+    	message += "Cool not set"
     }
- 
+ 	log.debug message
+    sendNotificationEvent(message)
 }
 
 def getSetpoint(priorOrNext) {

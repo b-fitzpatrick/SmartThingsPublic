@@ -81,6 +81,16 @@ def activateNow(setpoint) {
     return false
 }
 
+def getAppliedHeat() {
+	state.appliedHeat = thermostat.currentHeatingSetpoint
+    log.debug "AppliedHeat=${state.appliedHeat}"
+}
+
+def getAppliedCool() {
+	state.appliedCool = thermostat.currentCoolingSetpoint
+    log.debug "AppliedCool=${state.appliedCool}"
+}
+
 def applySetpoint() {
 	//log.debug "Running applySetpoint(): Current heat: ${thermostat.currentHeatingSetpoint}, cool: ${thermostat.currentCoolingSetpoint}"
     def applyHeat
@@ -125,16 +135,16 @@ def applySetpoint() {
     if (thermostat.currentThermostatMode != "auto") thermostat.auto()
     if (applyHeat != state.appliedHeat && thermostat.currentHeatingSetpoint != applyHeat) {
     	message += "Set heat, "
+        runIn(10, getAppliedHeat)
         thermostat.setHeatingSetpoint(applyHeat, [delay: 2000])
-        state.appliedHeat = applyHeat
         thermostat.setHeatingSetpoint(applyHeat, [delay: 6000]) // Do again. Will this make it more reliable?
     } else {
     	message += "Heat not set, "
     }
     if (applyCool != state.appliedCool && thermostat.currentCoolingSetpoint != applyCool) {
     	message += "Set cool"
+        runIn(10, getAppliedCool)
         thermostat.setCoolingSetpoint(applyCool, [delay: 4000])
-        state.appliedCool = applyCool
         thermostat.setCoolingSetpoint(applyCool, [delay: 8000]) // Do again. Will this make it more reliable?
     } else {
     	message += "Cool not set"

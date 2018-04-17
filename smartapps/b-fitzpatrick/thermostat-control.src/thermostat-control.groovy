@@ -137,7 +137,7 @@ def applySetpoint() {
     	message += "Set heat, "
         runIn(10, getAppliedHeat)
         thermostat.setHeatingSetpoint(applyHeat, [delay: 2000])
-        thermostat.setHeatingSetpoint(applyHeat, [delay: 6000]) // Do again. Will this make it more reliable?
+        //thermostat.setHeatingSetpoint(applyHeat, [delay: 6000]) // Do again. Will this make it more reliable?
     } else {
     	message += "Heat not set, "
     }
@@ -145,7 +145,7 @@ def applySetpoint() {
     	message += "Set cool"
         runIn(10, getAppliedCool)
         thermostat.setCoolingSetpoint(applyCool, [delay: 4000])
-        thermostat.setCoolingSetpoint(applyCool, [delay: 8000]) // Do again. Will this make it more reliable?
+        //thermostat.setCoolingSetpoint(applyCool, [delay: 8000]) // Do again. Will this make it more reliable?
     } else {
     	message += "Cool not set"
     }

@@ -1,7 +1,7 @@
 /**
  *  Thermostat Control
  *
- *  Copyright 2016 Brian Fitzpatrick
+ *  Copyright 2018 Brian Fitzpatrick
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -70,8 +70,12 @@ def updated() {
 }
 
 def initialize() {
-	state.appliedHeat = 0
+	state.appliedSetpoint = ""
+    state.desiredSetpoint = ""
+    state.appliedHeat = 0
+    state.desiredHeat = 0
     state.appliedCool = 0
+    state.desiredCool = 0
     applySetpoint()
     runEvery5Minutes(applySetpoint)
 }
@@ -81,40 +85,47 @@ def activateNow(setpoint) {
     return false
 }
 
-def getAppliedHeat() {
-	state.appliedHeat = thermostat.currentHeatingSetpoint
-    log.debug "AppliedHeat=${state.appliedHeat}"
-}
-
-def getAppliedCool() {
-	state.appliedCool = thermostat.currentCoolingSetpoint
-    log.debug "AppliedCool=${state.appliedCool}"
+def getAppliedSetpoint() {
+	def message
+    thermostat.refresh()
+    state.appliedHeat = thermostat.currentHeatingSetpoint
+    state.appliedCool = thermostat.currentCoolingSetpoint
+    message = "${thermostat.displayName}: "
+    if (state.appliedHeat != state.desiredHeat || state.appliedCool != state.desiredCool) {
+        message += "Failed to apply '${state.desiredSetpoint}' (${state.desiredHeat} heat, ${state.desiredCool} cool)"
+        sendPush(message)
+        log.debug message
+    } else {
+        // Applied setpoint successfully
+        state.appliedSetpoint = state.desiredSetpoint
+        message += "Applied '${state.appliedSetpoint}'"
+        sendNotificationEvent(message)
+        log.debug message
+    }
 }
 
 def applySetpoint() {
-	//log.debug "Running applySetpoint(): Current heat: ${thermostat.currentHeatingSetpoint}, cool: ${thermostat.currentCoolingSetpoint}"
+	log.debug "Running applySetpoint(): currentHeatingSetpoint=${thermostat.currentHeatingSetpoint}, currentCoolingSetpoint=${thermostat.currentCoolingSetpoint}"
     def applyHeat
     def applyCool
     def message
-    
-    // Refresh thermostat state, as events do not seem to be reliable
-    thermostat.refresh()
+    def sendNotification = false
     
     // Report the current values
     message = "${thermostat.displayName}: "
-    message += "CurHeat=${thermostat.currentHeatingSetpoint}, "
-    message += "CurCool=${thermostat.currentCoolingSetpoint}, "
-    message += "AppliedHeat=${state.appliedHeat}, "
-    message += "AppliedCool=${state.appliedCool}, "
+    message += "currentHeatingSetpoint=${thermostat.currentHeatingSetpoint}, "
+    message += "currentCoolingSetpoint=${thermostat.currentCoolingSetpoint}, "
+    message += "state.appliedHeat=${state.appliedHeat}, "
+    message += "state.appliedCool=${state.appliedCool}, "
     
     // Determine the current and next setpoints
     def curSetpoint = getSetpoint("prior")
     def nextSetpoint = getSetpoint("next")
     
-    // If the next setpoint is "achieve by", should it be activated now?
-    if (settings."achieve${nextSetpoint}") {
-    	if (activateNow(nextSetpoint)) curSetpoint = nextSetpoint
-    }
+    // TODO If the next setpoint is "achieve by", should it be activated now?
+    // if (settings."achieve${nextSetpoint}") {
+    // 	 if (activateNow(nextSetpoint)) curSetpoint = nextSetpoint
+    //}
     
     // Determine the temperature settings based on "Hold" and "Away" settings
     if (holdActive) {
@@ -127,30 +138,29 @@ def applySetpoint() {
         applyHeat = curSetpoint.heat
         applyCool = curSetpoint.cool
     }
-    message += "ApplyHeat=${applyHeat}, "
-    message += "ApplyCool=${applyCool}, "
+    message += "applyHeat=${applyHeat}, "
+    message += "applyCool=${applyCool}, "
     
-	// Make sure thermostat is set to auto and set the temperatures
-    // if changed since last applied setting and not currently set
-    if (thermostat.currentThermostatMode != "auto") thermostat.auto()
-    if (applyHeat != state.appliedHeat && thermostat.currentHeatingSetpoint != applyHeat) {
-    	message += "Set heat, "
-        runIn(10, getAppliedHeat)
-        thermostat.setHeatingSetpoint(applyHeat, [delay: 2000])
-        //thermostat.setHeatingSetpoint(applyHeat, [delay: 6000]) // Do again. Will this make it more reliable?
+	// Make sure thermostat is set to auto
+    //if (thermostat.currentThermostatMode != "auto") thermostat.auto()
+    
+    // Apply the heat and cool if the setpoint has changed
+    if (curSetpoint.name != state.appliedSetpoint) {
+    	message += "Applying '${curSetpoint.name}'"
+        sendNotification = true
+        state.desiredSetpoint = curSetpoint.name
+        state.desiredHeat = applyHeat
+        state.desiredCool = applyCool
+        runIn(20, getAppliedSetpoint)
+        thermostat.setHeatingSetpoint(applyHeat, [delay: 1000])
+        thermostat.setCoolingSetpoint(applyCool, [delay: 5000])
     } else {
-    	message += "Heat not set, "
-    }
-    if (applyCool != state.appliedCool && thermostat.currentCoolingSetpoint != applyCool) {
-    	message += "Set cool"
-        runIn(10, getAppliedCool)
-        thermostat.setCoolingSetpoint(applyCool, [delay: 4000])
-        //thermostat.setCoolingSetpoint(applyCool, [delay: 8000]) // Do again. Will this make it more reliable?
-    } else {
-    	message += "Cool not set"
+    	message += "Setpoint '${curSetpoint.name}' already applied"
     }
  	log.debug message
-    sendNotificationEvent(message)
+    if (sendNotification == true) {
+    	sendNotificationEvent(message)
+    }
 }
 
 def getSetpoint(priorOrNext) {
